@@ -1,0 +1,697 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>LCA Workflow</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: Karopapier-Fläche mit fünf Phasenspalten (Vorgaben bis Ausgabe), Detailfeld rechts bzw. darunter */
+:root {
+  --bg: #eef1f4;
+  --paper: #f9fafb;
+  --panel: #ffffff;
+  --ink: #18212b;
+  --muted: #566270;
+  --line: #d3d9df;
+  --grid: #e3e8ec;
+  --edge: #7d8996;
+  --accent: #1f4e8c;
+  --p-vor: #2e7d4f;
+  --p-mod: #5d6873;
+  --p-val: #2a5db0;
+  --p-aus: #8a4f9e;
+  --p-dat: #a0612a;
+  --auto: #f2c200;
+  --on-auto: #2a2100;
+  --p-out: #0e7c86;
+  --star: #c4382c;
+  --on-star: #ffffff;
+  --warn: #a96a00;
+  --on-warn: #ffffff;
+  --warn-bg: #fbefd5;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12171c; --paper: #171d23; --panel: #1d252d; --ink: #e7ecf0; --muted: #9aa6b2;
+    --line: #33404b; --grid: #222b33; --edge: #7f8c99; --accent: #7fb0ff;
+    --p-vor: #5fbf86; --p-mod: #a2adb8; --p-val: #78a6f0; --p-aus: #c996dc; --p-dat: #e0a070; --p-out: #4fc3cc;
+    --star: #ff7b6b; --on-star: #2a0805; --warn: #f0b44c; --on-warn: #1a1200; --warn-bg: #3a2d14;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12171c; --paper: #171d23; --panel: #1d252d; --ink: #e7ecf0; --muted: #9aa6b2;
+  --line: #33404b; --grid: #222b33; --edge: #7f8c99; --accent: #7fb0ff;
+  --p-vor: #5fbf86; --p-mod: #a2adb8; --p-val: #78a6f0; --p-aus: #c996dc; --p-dat: #e0a070; --p-out: #4fc3cc;
+  --star: #ff7b6b; --on-star: #2a0805; --warn: #f0b44c; --on-warn: #1a1200; --warn-bg: #3a2d14;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  padding-block: 20px 32px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+button { font: inherit; color: inherit; }
+.app { max-width: 1480px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+.kicker { font: 500 11px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+h1 { margin: 0; font-size: 28px; line-height: 1.15; font-weight: 600; letter-spacing: -0.01em; text-wrap: balance; }
+.lead { margin: 6px 0 0; color: var(--muted); max-width: 62ch; }
+
+.tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tbtn {
+  min-width: 34px; height: 34px; padding: 0 10px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 4px; cursor: pointer;
+}
+.tbtn:hover { border-color: var(--accent); }
+.zoomval { font: 500 12px var(--font-mono); color: var(--muted); min-width: 48px; text-align: center; font-variant-numeric: tabular-nums; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chips .lbl { font: 500 11px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-right: 2px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 16px; cursor: pointer;
+}
+.chip .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--pc, var(--warn)); }
+.chip[aria-pressed="true"] { border-color: var(--pc, var(--warn)); background: color-mix(in srgb, var(--pc, var(--warn)) 14%, var(--panel)); }
+.chip:hover { border-color: var(--pc, var(--warn)); }
+
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+@media (max-width: 960px) { .main { grid-template-columns: minmax(0, 1fr); } }
+
+.viewport {
+  position: relative; overflow: auto; height: clamp(380px, 66vh, 660px);
+  border: 1px solid var(--line); border-radius: 6px; background: var(--paper);
+}
+.viewport.drag { cursor: grabbing; user-select: none; }
+.sizer {
+  position: relative; min-width: 100%; min-height: 100%;
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: calc(20px * var(--z, 1)) calc(20px * var(--z, 1));
+}
+.stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.band {
+  position: absolute; border-radius: 4px;
+  background: color-mix(in srgb, var(--pc) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--pc) 24%, transparent);
+}
+.bandlabel {
+  position: absolute; font: 500 12px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--pc);
+}
+.bandlabel small { display: block; margin-top: 5px; font: 400 11px/1.2 var(--font-body); letter-spacing: 0; text-transform: none; color: var(--muted); }
+svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.edge { fill: none; stroke: var(--edge); stroke-width: 1.6; transition: opacity .15s; }
+.edge.on { stroke: var(--ink); stroke-width: 2.4; }
+.edge.dim { opacity: .14; }
+.edge.fade { opacity: .22; }
+.ah { fill: var(--edge); }
+.ah-on { fill: var(--ink); }
+.elabel { font: 500 11px var(--font-mono); fill: var(--muted); paint-order: stroke; stroke: var(--paper); stroke-width: 5px; stroke-linejoin: round; transition: opacity .15s; }
+.elabel.on { fill: var(--ink); }
+.elabel.dim { opacity: .2; }
+
+.node {
+  position: absolute; width: 210px; height: 96px; padding: 10px 12px; text-align: left; cursor: pointer;
+  --nodebg: var(--panel);
+  background: var(--nodebg); border: 1.5px solid color-mix(in srgb, var(--pc) 50%, var(--line)); border-radius: 4px;
+  display: flex; flex-direction: column; justify-content: flex-start; gap: 3px;
+  transition: opacity .15s, box-shadow .15s;
+}
+.node.proc { --nodebg: color-mix(in srgb, var(--pc) 12%, var(--panel)); border-color: var(--pc); }
+.node .kind { font: 500 10px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--pc); }
+.node .ttl { font-weight: 600; font-size: 15px; line-height: 1.2; }
+.node .sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.node .top { display: flex; align-items: center; justify-content: space-between; height: 18px; }
+.mode { position: relative; flex: none; width: 18px; height: 18px; border-radius: 4px; display: grid; place-items: center; }
+.mode svg { width: 14px; height: 14px; display: block; }
+.mode.man { color: var(--ink); border: 1.5px solid var(--muted); }
+.mode.auto { color: var(--on-auto); background: var(--auto); }
+.mode.auto::after { content: ""; position: absolute; inset: -3px; border-radius: 7px; border: 1.5px solid var(--auto); opacity: 0; animation: pulse 2.4s ease-out infinite; }
+@keyframes pulse { 0% { opacity: .9; transform: scale(.8); } 100% { opacity: 0; transform: scale(1.4); } }
+@keyframes flow { to { stroke-dashoffset: -13; } }
+.edge.auto { stroke-dasharray: 7 6; animation: flow 1.2s linear infinite; }
+.node .badges { position: absolute; top: -9px; right: 8px; display: flex; gap: 4px; }
+.badge { width: 19px; height: 19px; border-radius: 50%; font: 600 11px/19px var(--font-mono); text-align: center; background: var(--star); color: var(--on-star); }
+.badge.q { background: var(--warn); color: var(--on-warn); }
+.node:hover { border-color: var(--accent); }
+.node.sel { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent); }
+.node:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.node.dim { opacity: .3; }
+.node.fade { opacity: .26; }
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px;
+  display: flex; flex-direction: column; gap: 14px; min-width: 0;
+}
+@media (min-width: 961px) { .panel { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); } }
+.panel h2 { margin: 0; font-size: 20px; line-height: 1.2; font-weight: 600; text-wrap: balance; }
+.panel .sub { margin: 2px 0 0; color: var(--muted); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font: 500 11px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; padding: 5px 8px; border-radius: 3px; border: 1px solid color-mix(in srgb, var(--pc, var(--muted)) 55%, var(--line)); color: var(--pc, var(--muted)); }
+.tag.star { --pc: var(--star); }
+.sec { display: flex; flex-direction: column; gap: 6px; }
+.sec h3 { margin: 0; font: 500 11px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.sec p { margin: 0; max-width: 62ch; }
+.warnbox { background: var(--warn-bg); border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent); border-radius: 4px; padding: 10px 12px; }
+.warnbox h3 { color: var(--warn); margin-bottom: 6px; }
+.links { display: flex; flex-direction: column; gap: 6px; }
+.link {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 8px 10px; cursor: pointer;
+  background: transparent; border: 1px solid var(--line); border-radius: 4px;
+}
+.link:hover { border-color: var(--accent); }
+.link .dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--pc, var(--warn)); }
+.link .t { flex: 1; min-width: 0; }
+.link .e { font: 400 11px var(--font-mono); color: var(--muted); }
+.back { align-self: flex-start; background: none; border: none; padding: 0; cursor: pointer; color: var(--accent); font-size: 13px; }
+.back:hover { text-decoration: underline; }
+.legend { display: grid; grid-template-columns: 34px 1fr; gap: 8px 10px; align-items: center; color: var(--muted); font-size: 13px; }
+.sw { width: 34px; height: 18px; border-radius: 3px; border: 1.5px solid color-mix(in srgb, var(--p-val) 50%, var(--line)); background: var(--panel); }
+.sw.proc { background: color-mix(in srgb, var(--p-val) 12%, var(--panel)); border-color: var(--p-val); }
+.sw.b { display: grid; place-items: center; border: none; background: none; }
+.sw.b .badge { width: 17px; height: 17px; line-height: 17px; font-size: 10px; }
+.hint { margin: 0; color: var(--muted); font-size: 12px; }
+.foot { margin: 0; color: var(--muted); font-size: 12px; max-width: 80ch; }
+@media (prefers-reduced-motion: reduce) { .node, .edge, .elabel { transition: none; } .edge.auto, .mode.auto::after { animation: none; } }
+</style>
+
+<div class="app">
+  <header class="top">
+    <div>
+      <p class="kicker">Dashboard LCA · Entwurf</p>
+      <h1>LCA Workflow</h1>
+      <p class="lead">Von den KBOB/EPD-Werten über Revit, IFC, Validierung und Datenbank bis zur adressatengerechten Visualisierung. Klicke einen Schritt an, um Details und Verbindungen zu sehen.</p>
+    </div>
+    <div class="tools" role="group" aria-label="Zoom">
+      <button class="tbtn" id="zout" type="button" aria-label="Verkleinern">−</button>
+      <span class="zoomval" id="zval" aria-live="polite">100 %</span>
+      <button class="tbtn" id="zin" type="button" aria-label="Vergrössern">+</button>
+      <button class="tbtn" id="zfit" type="button">Einpassen</button>
+    </div>
+  </header>
+
+  <div class="chips" id="chips" role="group" aria-label="Phasen hervorheben"></div>
+
+  <div class="main">
+    <div class="viewport" id="vp" tabindex="-1">
+      <div class="sizer" id="sizer"><div class="stage" id="stage"></div></div>
+    </div>
+    <aside class="panel" id="panel" aria-live="polite"></aside>
+  </div>
+
+  <p class="foot">Entwurf nach handschriftlicher Skizze vom 14.10.2026, ergänzt um die Rückmeldungen vom selben Tag.</p>
+</div>
+
+<script>
+(function () {
+  var NW = 210, NH = 96, GX = 72, GY = 40, PX = 32, TOP = 72, COLS = 6, ROWS = 4;
+  var SW = PX * 2 + COLS * NW + (COLS - 1) * GX;
+  var SH = TOP + ROWS * NH + (ROWS - 1) * GY + 32;
+
+  var PH = [
+    { id: 'vor', name: 'Vorgaben', c: '--p-vor', d: 'genaue Vorgaben' },
+    { id: 'mod', name: 'Modellierung', c: '--p-mod', d: 'Revit und IFC' },
+    { id: 'val', name: 'Validierung', c: '--p-val', d: 'Smart-Views, Presets' },
+    { id: 'aus', name: 'Auswertung', c: '--p-aus', d: 'Ausmass, Excel' },
+    { id: 'dat', name: 'Datenbank', c: '--p-dat', d: 'DB und FIS' },
+    { id: 'out', name: 'Ausgabe', c: '--p-out', d: 'Stakeholder, Visualisierung' }
+  ];
+  var KIND = { daten: 'Daten', datei: 'Datei', schritt: 'Schritt', vorgabe: 'Vorgabe', system: 'System' };
+
+  var NODES = [
+    { id: 'kbob', ph: 'vor', col: 0, row: 0, kind: 'daten', t: 'KBOB/EPD-Werte', s: 'Tabelle mit Umweltkennwerten',
+      was: 'Ausgangsdaten für die Ökobilanz: eine Tabelle mit KBOB- und EPD-Werten.',
+      skizze: 'Eingekreist, ganz oben unter «genaue Vorgaben».' },
+    { id: 'matdb', ph: 'vor', col: 0, row: 1, kind: 'daten', t: 'Materialdatenbank', s: 'Vereinheitlichung',
+      was: 'Die Werte aus der Tabelle werden vereinheitlicht und in einer Materialdatenbank geführt.',
+      skizze: 'Pfeil von der Tabelle zur Materialdatenbank, dazu die grüne Notiz «Vereinheitlichung». Von hier geht der Pfeil «Anpassungen» zur Modellierung.' },
+    { id: 'bauteil', ph: 'vor', col: 0, row: 2, kind: 'daten', t: 'Bauteile und Schichten', s: 'mit eBKP-H-Nr.',
+      was: 'Bauteile mit ihren Schichten. Jedem Bauteil wird eine eBKP-H-Nummer zugeordnet, die in die Modellierung einfliesst.',
+      skizze: 'Bauteil und Schichten sind mit einem Doppelpfeil verbunden und gemeinsam eingekreist. Die eBKP-H-Nr. ist blau eingekreist, der Pfeil führt zum Bauteil.' },
+    { id: 'revit', ph: 'mod', col: 1, row: 0, kind: 'schritt', mode: 'man', t: 'Modellierung in Revit', s: 'mit Anpassungen',
+      was: 'Das Gebäudemodell wird in Revit erstellt, mit den angepassten Materialien sowie den Bauteilen und Schichten samt Nummer.',
+      skizze: 'Eingekreist. Zwei Pfeile führen hinein: «Anpassungen» aus der Materialdatenbank und die Schleife von Bauteil und Schichten.' },
+    { id: 'ifcx', ph: 'mod', col: 1, row: 1, kind: 'schritt', mode: 'man', t: 'IFC-Export', s: 'aus Revit',
+      was: 'Das Revit-Modell wird als IFC exportiert.',
+      skizze: 'Grüne Beschriftung «IFC-Export» am Pfeil zwischen Modellierung und Modelldatei.' },
+    { id: 'ifc', ph: 'mod', col: 1, row: 2, kind: 'datei', t: 'Modell.ifc', s: 'Übergabe an die Validierung',
+      was: 'Die exportierte IFC-Datei ist die Grundlage für die Validierung.',
+      skizze: 'Der Pfeil führt vom IFC-Export zu «Modell.ifc» und weiter zur Validierung.' },
+    { id: 'presets', ph: 'val', col: 2, row: 0, kind: 'vorgabe', t: 'Smart-Views und Presets', s: 'vorbereitet',
+      was: 'Vorbereitete Smart-Views und Presets, mit denen das Modell geprüft wird.',
+      skizze: 'Grün geschrieben: «Vorbereitete Smart-Views», daneben «Presets».' },
+    { id: 'valid', ph: 'val', col: 2, row: 1, kind: 'schritt', mode: 'auto', t: 'Validierung', s: 'mit Smart-Views',
+      was: 'Das IFC-Modell wird mit den vorbereiteten Smart-Views validiert.',
+      skizze: 'Blau unterstrichen: «Validierung (Smart-Views)».' },
+    { id: 'vmodell', ph: 'val', col: 2, row: 2, kind: 'datei', t: 'Validiertes Modell', s: 'geprüfte Grundlage',
+      was: 'Das Modell nach der Validierung. Von hier aus werden die Mengen ausgewertet.',
+      skizze: 'Grau hinterlegt als eigener Zwischenstand.' },
+    { id: 'ausmass', ph: 'aus', col: 3, row: 0, kind: 'schritt', mode: 'auto', t: 'Ausmass', s: 'Erstellung von Listen',
+      was: 'Aus dem validierten Modell werden Listen mit den Mengen erstellt.',
+      skizze: 'Blau: «Ausmass», darunter «Erstellung von Listen».' },
+    { id: 'excel', ph: 'aus', col: 3, row: 1, kind: 'datei', t: 'Excel-File', s: 'Vorlage mit allen Funktionen',
+      was: 'Die Listen landen in einer Excel-Vorlage, die alle benötigten Funktionen bereits enthält.',
+      skizze: 'Grün: «Excel-File», «Vorlage mit allen Funktionen».' },
+    { id: 'kontrolle', ph: 'aus', col: 3, row: 2, kind: 'schritt', mode: 'man', t: 'Kontrolle und Anpassungen', s: 'der Ergebnisse',
+      was: 'Die Ergebnisse werden kontrolliert und bei Bedarf angepasst.',
+      skizze: 'Pfeil von der Excel-Vorlage nach unten zu «Kontrolle und Anpassungen».' },
+    { id: 'db', ph: 'dat', col: 4, row: 2, kind: 'daten', t: 'Datenbank (DB)', s: 'Logik',
+      was: 'Die kontrollierten Daten werden in einer Datenbank mit eigener Logik geführt. Sie speist die Visualisierung, das FIS ist daran angehängt.',
+      skizze: 'Eingekreist «DB», links daneben «Logik».' },
+    { id: 'fis', ph: 'dat', col: 4, row: 3, kind: 'system', t: 'FIS', s: 'internes System',
+      was: 'Das FIS ist das interne System und hängt hinter der Datenbank.',
+      skizze: 'In der Skizze steht «FIS» unten mit einem Doppelpfeil. Nach deiner Rückmeldung habe ich es an die Datenbank angehängt.' },
+    { id: 'stkh', ph: 'out', col: 5, row: 0, kind: 'daten', t: 'Stakeholder', s: 'Beteiligte und Adressaten',
+      was: 'Die Stakeholder, für die die Ergebnisse aufbereitet werden. Mit ihnen werden die Interviews geführt.',
+      skizze: 'In der Skizze kein eigener Schritt, auf deinen Wunsch ergänzt.' },
+    { id: 'interv', ph: 'out', col: 5, row: 1, kind: 'schritt', mode: 'man', t: 'Interviews', s: 'mit den Stakeholdern',
+      was: 'Interviews mit den Stakeholdern. Daraus entsteht die Stakeholder-Liste.',
+      skizze: 'In der Skizze «Interviews» in Anführungszeichen neben dem FIS. Nach deiner Rückmeldung zwischen Stakeholder und Liste gesetzt.' },
+    { id: 'stake', ph: 'out', col: 5, row: 2, kind: 'daten', t: 'Stakeholder-Liste', s: 'wer bekommt was',
+      was: 'Die Liste der Stakeholder bestimmt, für wen die Visualisierung aufbereitet wird.',
+      skizze: 'Grün: «Stakeholder-Liste», direkt unter «adressatengerecht».' },
+    { id: 'viz', ph: 'out', col: 5, row: 3, kind: 'schritt', mode: 'auto', t: 'Visualisierung', s: 'adressatengerecht',
+      was: 'Die Ergebnisse aus der Datenbank werden so aufbereitet, dass sie zu den jeweiligen Adressaten passen.',
+      skizze: 'Grün: «Visualisierung», darunter «adressatengerecht».' }
+  ];
+  var EDGES = [
+    { from: 'kbob', to: 'matdb' },
+    { from: 'matdb', to: 'revit', label: 'Anpassungen' },
+    { from: 'bauteil', to: 'revit' },
+    { from: 'revit', to: 'ifcx' },
+    { from: 'ifcx', to: 'ifc' },
+    { from: 'ifc', to: 'valid' },
+    { from: 'presets', to: 'valid' },
+    { from: 'valid', to: 'vmodell' },
+    { from: 'vmodell', to: 'ausmass' },
+    { from: 'ausmass', to: 'excel' },
+    { from: 'excel', to: 'kontrolle' },
+    { from: 'kontrolle', to: 'db' },
+    { from: 'db', to: 'fis' },
+    { from: 'db', to: 'viz' },
+    { from: 'stkh', to: 'interv' },
+    { from: 'interv', to: 'stake' },
+    { from: 'stake', to: 'viz', label: 'Adressaten' }
+  ];
+
+  var HAS_OPEN = NODES.some(function (n) { return n.flag; });
+  var N = {};
+  NODES.forEach(function (n) { N[n.id] = n; });
+  var PHM = {};
+  PH.forEach(function (p) { PHM[p.id] = p; });
+
+  var vp = document.getElementById('vp');
+  var sizer = document.getElementById('sizer');
+  var stage = document.getElementById('stage');
+  var panel = document.getElementById('panel');
+  var chipsEl = document.getElementById('chips');
+  var zval = document.getElementById('zval');
+
+  function colX(c) { return PX + c * (NW + GX); }
+  function rowY(r) { return TOP + r * (NH + GY); }
+  function mk(tag, cls, txt) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt != null) e.textContent = txt;
+    return e;
+  }
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function mks(tag, attrs) {
+    var e = document.createElementNS(SVGNS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  function modeEl(m) {
+    var s = mk('span', 'mode ' + m);
+    s.title = m === 'man' ? 'Manuell' : 'Automatisch';
+    var v = mks('svg', { viewBox: '0 0 20 20', 'aria-hidden': 'true' });
+    if (m === 'man') {
+      v.appendChild(mks('circle', { cx: 10, cy: 10, r: 6, fill: 'currentColor' }));
+      for (var i = 0; i < 8; i++) {
+        v.appendChild(mks('rect', { x: 8.3, y: 0.8, width: 3.4, height: 4.6, rx: 0.7, fill: 'currentColor', transform: 'rotate(' + (i * 45) + ' 10 10)' }));
+      }
+      var h = mks('circle', { cx: 10, cy: 10, r: 2.4 });
+      h.setAttribute('style', 'fill:var(--nodebg, var(--panel))');
+      v.appendChild(h);
+    } else {
+      v.appendChild(mks('polygon', { points: '11.6,1 4,11.2 9,11.2 8,19 16,8.4 11,8.4', fill: 'currentColor' }));
+    }
+    s.appendChild(v);
+    return s;
+  }
+
+  stage.style.width = SW + 'px';
+  stage.style.height = SH + 'px';
+
+  /* Phasenbänder */
+  PH.forEach(function (p, c) {
+    var b = mk('div', 'band');
+    b.style.cssText = 'left:' + (colX(c) - 14) + 'px;top:16px;width:' + (NW + 28) + 'px;height:' + (SH - 32) + 'px;--pc:var(' + p.c + ')';
+    stage.appendChild(b);
+    var l = mk('div', 'bandlabel');
+    l.style.cssText = 'left:' + colX(c) + 'px;top:28px;--pc:var(' + p.c + ')';
+    l.appendChild(document.createTextNode(p.name));
+    l.appendChild(mk('small', '', p.d));
+    stage.appendChild(l);
+  });
+
+  /* Kanten */
+  var svg = mks('svg', { 'class': 'edges', width: SW, height: SH, viewBox: '0 0 ' + SW + ' ' + SH, 'aria-hidden': 'true' });
+  var defs = mks('defs', {});
+  function marker(id, cls) {
+    var m = mks('marker', { id: id, viewBox: '0 0 10 10', refX: '9', refY: '5', markerWidth: '10', markerHeight: '10', markerUnits: 'userSpaceOnUse', orient: 'auto-start-reverse' });
+    m.appendChild(mks('path', { d: 'M0 0L10 5L0 10z', 'class': cls }));
+    defs.appendChild(m);
+  }
+  marker('ah', 'ah');
+  marker('ah-on', 'ah-on');
+  svg.appendChild(defs);
+
+  function geom(e) {
+    var a = N[e.from], b = N[e.to];
+    var ax = colX(a.col), ay = rowY(a.row), bx = colX(b.col), by = rowY(b.row);
+    if (a.col === b.col) {
+      var x = ax + NW / 2, y1, y2;
+      if (b.row > a.row) { y1 = ay + NH; y2 = by; } else { y1 = ay; y2 = by + NH; }
+      return { d: 'M' + x + ' ' + y1 + 'L' + x + ' ' + y2, lx: x + 9, ly: (y1 + y2) / 2 + 4, anchor: 'start' };
+    }
+    var x1 = ax + NW, y1b = ay + NH / 2, x2 = bx, y2b = by + NH / 2, dx = (x2 - x1) / 2;
+    return {
+      d: 'M' + x1 + ' ' + y1b + 'C' + (x1 + dx) + ' ' + y1b + ' ' + (x2 - dx) + ' ' + y2b + ' ' + x2 + ' ' + y2b,
+      lx: (x1 + x2) / 2, ly: (y1b + y2b) / 2 - 8, anchor: 'middle'
+    };
+  }
+  EDGES.forEach(function (e) {
+    var g = geom(e);
+    var p = mks('path', { d: g.d, 'class': 'edge' + (N[e.to].mode === 'auto' ? ' auto' : ''), 'marker-end': 'url(#ah)' });
+    if (e.both) p.setAttribute('marker-start', 'url(#ah)');
+    svg.appendChild(p);
+    e.pathEl = p;
+    if (e.label) {
+      var t = mks('text', { x: g.lx, y: g.ly, 'text-anchor': g.anchor, 'class': 'elabel' });
+      t.textContent = e.label;
+      svg.appendChild(t);
+      e.labelEl = t;
+    }
+  });
+  stage.appendChild(svg);
+
+  /* Knoten */
+  NODES.forEach(function (n) {
+    var b = mk('button', 'node' + (n.kind === 'schritt' ? ' proc' : ''));
+    b.type = 'button';
+    b.style.cssText = 'left:' + colX(n.col) + 'px;top:' + rowY(n.row) + 'px;--pc:var(' + PHM[n.ph].c + ')';
+    b.setAttribute('aria-pressed', 'false');
+    b.setAttribute('aria-label', n.t + ', ' + KIND[n.kind] + ', Phase ' + PHM[n.ph].name + (n.flag ? ', zu klären' : '') + (n.mode ? ', ' + (n.mode === 'man' ? 'manuell' : 'automatisch') : ''));
+    var top = mk('span', 'top');
+    top.appendChild(mk('span', 'kind', KIND[n.kind]));
+    if (n.mode) top.appendChild(modeEl(n.mode));
+    b.appendChild(top);
+    b.appendChild(mk('span', 'ttl', n.t));
+    b.appendChild(mk('span', 'sub', n.s));
+    if (n.star || n.flag) {
+      var bd = mk('span', 'badges');
+      if (n.flag) bd.appendChild(mk('span', 'badge q', '?'));
+      b.appendChild(bd);
+    }
+    b.addEventListener('click', function (ev) { ev.stopPropagation(); select(n.id === sel ? null : n.id); });
+    stage.appendChild(b);
+    n.el = b;
+  });
+
+  /* Zustand */
+  var sel = null;
+  var phFilter = {};
+  var onlyOpen = false;
+  var modeF = null;
+
+  function anyFilter() { return onlyOpen || !!modeF || Object.keys(phFilter).length > 0; }
+  function nodeVisible(n) {
+    if (modeF) return n.mode === modeF;
+    if (onlyOpen) return !!n.flag;
+    if (Object.keys(phFilter).length) return !!phFilter[n.ph];
+    return true;
+  }
+  function connected(id) {
+    var s = {}; s[id] = true;
+    EDGES.forEach(function (e) {
+      if (e.from === id) s[e.to] = true;
+      if (e.to === id) s[e.from] = true;
+    });
+    return s;
+  }
+  function update() {
+    var conn = sel ? connected(sel) : null;
+    NODES.forEach(function (n) {
+      var el = n.el;
+      el.classList.toggle('sel', n.id === sel);
+      el.setAttribute('aria-pressed', n.id === sel ? 'true' : 'false');
+      el.classList.toggle('dim', !!sel && !conn[n.id]);
+      el.classList.toggle('fade', !sel && anyFilter() && !nodeVisible(n));
+    });
+    EDGES.forEach(function (e) {
+      var on = !!sel && (e.from === sel || e.to === sel);
+      var dim = !!sel && !on;
+      var fade = !sel && anyFilter() && !nodeVisible(N[e.from]) && !nodeVisible(N[e.to]);
+      e.pathEl.classList.toggle('on', on);
+      e.pathEl.classList.toggle('dim', dim);
+      e.pathEl.classList.toggle('fade', fade);
+      var m = on ? 'url(#ah-on)' : 'url(#ah)';
+      e.pathEl.setAttribute('marker-end', m);
+      if (e.both) e.pathEl.setAttribute('marker-start', m);
+      if (e.labelEl) {
+        e.labelEl.classList.toggle('on', on);
+        e.labelEl.classList.toggle('dim', dim || fade);
+      }
+    });
+    renderPanel();
+  }
+  function select(id, scroll) {
+    sel = id;
+    update();
+    if (id && scroll) centerOn(id);
+  }
+
+  function centerOn(id) {
+    var n = N[id];
+    var cx = (colX(n.col) + NW / 2) * z, cy = (rowY(n.row) + NH / 2) * z;
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    vp.scrollTo({ left: Math.max(0, cx - vp.clientWidth / 2), top: Math.max(0, cy - vp.clientHeight / 2), behavior: reduce ? 'auto' : 'smooth' });
+  }
+
+  /* Detailfeld */
+  function linkBtn(id, edgeLabel) {
+    var n = N[id];
+    var b = mk('button', 'link');
+    b.type = 'button';
+    b.style.setProperty('--pc', 'var(' + PHM[n.ph].c + ')');
+    b.appendChild(mk('span', 'dot'));
+    b.appendChild(mk('span', 't', n.t));
+    if (edgeLabel) b.appendChild(mk('span', 'e', edgeLabel));
+    b.addEventListener('click', function () { select(id, true); });
+    return b;
+  }
+  function section(title, child, cls) {
+    var s = mk('div', 'sec' + (cls ? ' ' + cls : ''));
+    s.appendChild(mk('h3', '', title));
+    s.appendChild(child);
+    return s;
+  }
+  function renderPanel() {
+    panel.textContent = '';
+    if (!sel) { renderOverview(); return; }
+    var n = N[sel];
+    var back = mk('button', 'back', '← Zurück zur Übersicht');
+    back.type = 'button';
+    back.addEventListener('click', function () { select(null); });
+    panel.appendChild(back);
+
+    var head = mk('div');
+    head.appendChild(mk('h2', '', n.t));
+    head.appendChild(mk('p', 'sub', n.s));
+    panel.appendChild(head);
+
+    var tags = mk('div', 'tags');
+    var t1 = mk('span', 'tag', PHM[n.ph].name); t1.style.setProperty('--pc', 'var(' + PHM[n.ph].c + ')');
+    tags.appendChild(t1);
+    tags.appendChild(mk('span', 'tag', KIND[n.kind]));
+    if (n.mode) tags.appendChild(mk('span', 'tag', n.mode === 'man' ? 'Manuell' : 'Automatisch'));
+    panel.appendChild(tags);
+    if (n.mode) {
+      var ab = mk('div', 'links');
+      ab.appendChild(mk('p', '', n.mode === 'man'
+        ? 'Dieser Schritt wird von Hand ausgeführt.'
+        : 'Dieser Schritt läuft automatisch, sobald die Eingangsdaten vorliegen.'));
+      ab.appendChild(mk('p', 'hint', 'Vorläufige Einstufung, bitte bestätigen.'));
+      panel.appendChild(section('Ablauf', ab));
+    }
+
+    panel.appendChild(section('Was passiert hier', mk('p', '', n.was)));
+    panel.appendChild(section('Aus der Skizze', mk('p', '', n.skizze)));
+    if (n.klaeren) {
+      var w = section('Zu klären', mk('p', '', n.klaeren), 'warnbox');
+      panel.appendChild(w);
+    }
+
+    var ins = [], outs = [], both = [];
+    EDGES.forEach(function (e) {
+      if (e.both) {
+        if (e.from === sel) both.push([e.to, e.label]);
+        else if (e.to === sel) both.push([e.from, e.label]);
+      } else if (e.to === sel) ins.push([e.from, e.label]);
+      else if (e.from === sel) outs.push([e.to, e.label]);
+    });
+    function group(title, arr) {
+      if (!arr.length) return;
+      var l = mk('div', 'links');
+      arr.forEach(function (p) { l.appendChild(linkBtn(p[0], p[1])); });
+      panel.appendChild(section(title, l));
+    }
+    group('Kommt von', ins);
+    group('Geht weiter an', outs);
+    group('Wechselwirkung mit', both);
+  }
+  function renderOverview() {
+    var head = mk('div');
+    head.appendChild(mk('h2', '', 'Überblick'));
+    head.appendChild(mk('p', 'sub', NODES.length + ' Schritte in ' + PH.length + ' Phasen'));
+    panel.appendChild(head);
+    panel.appendChild(mk('p', 'hint', 'Wähle links einen Schritt. Seine Verbindungen werden hervorgehoben, alles andere tritt zurück. Ziehen verschiebt die Ansicht.'));
+
+    var open = NODES.filter(function (n) { return n.flag; });
+    var l = mk('div', 'links');
+    open.forEach(function (n) { l.appendChild(linkBtn(n.id)); });
+    if (open.length) panel.appendChild(section('Zu klären (' + open.length + ')', l));
+
+    var lg = mk('div', 'legend');
+    function row(sw, txt) { lg.appendChild(sw); lg.appendChild(mk('span', '', txt)); }
+    row(mk('span', 'sw proc'), 'Schritt oder Tätigkeit');
+    row(mk('span', 'sw'), 'Daten, Datei oder System');
+    row(modeEl('man'), 'Manuell: wird von Hand ausgeführt');
+    row(modeEl('auto'), 'Automatisch: läuft selbst, die Pfeile davor fliessen');
+    if (HAS_OPEN) {
+      var b2 = mk('span', 'sw b'); b2.appendChild(mk('span', 'badge q', '?'));
+      row(b2, 'Beschriftung zu klären');
+    }
+    panel.appendChild(section('Legende', lg));
+  }
+
+  /* Phasen-Filter */
+  var alle = mk('button', 'chip', 'Alle');
+  alle.type = 'button';
+  chipsEl.appendChild(mk('span', 'lbl', 'Hervorheben'));
+  chipsEl.appendChild(alle);
+  var chipEls = [];
+  PH.forEach(function (p) {
+    var c = mk('button', 'chip');
+    c.type = 'button';
+    c.style.setProperty('--pc', 'var(' + p.c + ')');
+    c.appendChild(mk('span', 'dot'));
+    c.appendChild(document.createTextNode(p.name));
+    c.setAttribute('aria-pressed', 'false');
+    c.addEventListener('click', function () {
+      onlyOpen = false; modeF = null;
+      if (phFilter[p.id]) delete phFilter[p.id]; else phFilter[p.id] = true;
+      sel = null; syncChips(); update();
+    });
+    chipEls.push([p.id, c]);
+    chipsEl.appendChild(c);
+  });
+  chipsEl.appendChild(mk('span', 'lbl', 'Ablauf'));
+  var modeChips = [];
+  [['man', 'Manuell'], ['auto', 'Automatisch']].forEach(function (m) {
+    var c = mk('button', 'chip');
+    c.type = 'button';
+    c.style.setProperty('--pc', m[0] === 'man' ? 'var(--ink)' : 'var(--auto)');
+    c.appendChild(modeEl(m[0]));
+    c.appendChild(document.createTextNode(m[1]));
+    c.setAttribute('aria-pressed', 'false');
+    c.addEventListener('click', function () {
+      modeF = modeF === m[0] ? null : m[0];
+      phFilter = {}; onlyOpen = false; sel = null; syncChips(); update();
+    });
+    modeChips.push([m[0], c]);
+    chipsEl.appendChild(c);
+  });
+  var openChip = mk('button', 'chip');
+  openChip.type = 'button';
+  openChip.appendChild(mk('span', 'dot'));
+  openChip.appendChild(document.createTextNode('Zu klären'));
+  openChip.setAttribute('aria-pressed', 'false');
+  openChip.addEventListener('click', function () {
+    onlyOpen = !onlyOpen; phFilter = {}; modeF = null; sel = null; syncChips(); update();
+  });
+  if (HAS_OPEN) chipsEl.appendChild(openChip);
+  alle.addEventListener('click', function () { phFilter = {}; onlyOpen = false; modeF = null; sel = null; syncChips(); update(); });
+  function syncChips() {
+    chipEls.forEach(function (x) { x[1].setAttribute('aria-pressed', phFilter[x[0]] ? 'true' : 'false'); });
+    openChip.setAttribute('aria-pressed', onlyOpen ? 'true' : 'false');
+    modeChips.forEach(function (x) { x[1].setAttribute('aria-pressed', modeF === x[0] ? 'true' : 'false'); });
+    alle.setAttribute('aria-pressed', anyFilter() ? 'false' : 'true');
+  }
+
+  /* Zoom */
+  var z = 1, userZoomed = false;
+  function apply() {
+    stage.style.transform = 'scale(' + z + ')';
+    sizer.style.width = Math.round(SW * z) + 'px';
+    sizer.style.height = Math.round(SH * z) + 'px';
+    sizer.style.setProperty('--z', z);
+    zval.textContent = Math.round(z * 100) + ' %';
+  }
+  function setZoom(nz) {
+    nz = Math.max(0.4, Math.min(1.4, Math.round(nz * 100) / 100));
+    var cx = (vp.scrollLeft + vp.clientWidth / 2) / z, cy = (vp.scrollTop + vp.clientHeight / 2) / z;
+    z = nz; apply();
+    vp.scrollLeft = cx * z - vp.clientWidth / 2;
+    vp.scrollTop = cy * z - vp.clientHeight / 2;
+  }
+  function fit() {
+    var f = Math.min(vp.clientWidth / SW, vp.clientHeight / SH);
+    z = Math.max(0.45, Math.min(1, Math.floor(f * 100) / 100));
+    apply(); vp.scrollLeft = 0; vp.scrollTop = 0;
+  }
+  document.getElementById('zin').addEventListener('click', function () { userZoomed = true; setZoom(z + 0.1); });
+  document.getElementById('zout').addEventListener('click', function () { userZoomed = true; setZoom(z - 0.1); });
+  document.getElementById('zfit').addEventListener('click', function () { userZoomed = false; fit(); });
+  window.addEventListener('resize', function () { if (!userZoomed) fit(); });
+
+  /* Ziehen zum Verschieben (Maus), Klick ins Leere hebt die Auswahl auf */
+  var drag = null;
+  vp.addEventListener('pointerdown', function (e) {
+    if (e.pointerType !== 'mouse' || e.button !== 0 || e.target.closest('.node')) return;
+    drag = { x: e.clientX, y: e.clientY, sl: vp.scrollLeft, st: vp.scrollTop, moved: false };
+  });
+  window.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.abs(dx) + Math.abs(dy) > 4) { drag.moved = true; vp.classList.add('drag'); }
+    if (drag.moved) { vp.scrollLeft = drag.sl - dx; vp.scrollTop = drag.st - dy; }
+  });
+  window.addEventListener('pointerup', function () {
+    if (!drag) return;
+    var moved = drag.moved;
+    drag = null; vp.classList.remove('drag');
+    if (!moved && sel) select(null);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && sel) select(null);
+  });
+
+  syncChips();
+  fit();
+  update();
+})();
+</script>
+
+</body></html>
