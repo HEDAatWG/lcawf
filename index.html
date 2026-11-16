@@ -218,12 +218,12 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
     <aside class="panel" id="panel" aria-live="polite"></aside>
   </div>
 
-  <p class="foot">Entwurf nach handschriftlicher Skizze vom 14.10.2026, angepasst am 28.10.2026.</p>
+  <p class="foot">Entwurf nach handschriftlicher Skizze vom 14.10.2026, angepasst am 16.11.2026.</p>
 </div>
 
 <script>
 (function () {
-  var NW = 210, NH = 96, GX = 72, GY = 40, PX = 32, TOP = 72, COLS = 7, ROWS = 4;
+  var NW = 210, NH = 96, GX = 72, GY = 40, PX = 32, TOP = 72, COLS = 7, ROWS = 6;
   var SW = PX * 2 + COLS * NW + (COLS - 1) * GX;
   var SH = TOP + ROWS * NH + (ROWS - 1) * GY + 32;
 
@@ -245,11 +245,23 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
       was: 'Ausgangsdaten für die Ökobilanz: eine Tabelle mit KBOB-Werten.',
       skizze: 'Eingekreist, ganz oben unter «genaue Vorgaben».' },
     { id: 'matdb', ph: 'vor', col: 0, row: 1, kind: 'daten', t: 'Materialdatenbank', s: 'Vereinheitlichung',
-      was: 'Die Werte aus der Tabelle werden vereinheitlicht und in einer Materialdatenbank geführt.',
-      skizze: 'Pfeil von der Tabelle zur Materialdatenbank, dazu die grüne Notiz «Vereinheitlichung». Von hier geht der Pfeil «Anpassungen» zur Modellierung.' },
-    { id: 'revit', ph: 'mod', col: 1, row: 0, kind: 'schritt', mode: 'man', t: 'Modellierung in Revit', s: 'mit Anpassungen',
-      was: 'Das Gebäudemodell wird in Revit erstellt, mit den angepassten Materialien.',
-      skizze: 'Eingekreist. Der Pfeil «Anpassungen» kommt aus der Materialdatenbank.' },
+      was: 'Die Werte aus der Tabelle werden vereinheitlicht und in einer Materialdatenbank geführt. Daraus entsteht ein Excel mit dem Material.',
+      skizze: 'Pfeil von der Tabelle zur Materialdatenbank, dazu die grüne Notiz «Vereinheitlichung». Der frühere Pfeil «Anpassungen» direkt zur Modellierung ist gestrichen, es geht jetzt über das Excel.' },
+    { id: 'xmat', ph: 'vor', col: 0, row: 2, kind: 'datei', t: 'Excel', s: 'aus der Materialdatenbank',
+      was: 'Die Materialdatenbank wird als Excel ausgegeben. Daraus kommt das Material für die Modellierung.',
+      skizze: 'Rot eingezeichnet am 16.11.2026, unter der Materialdatenbank.' },
+    { id: 'vmat', ph: 'vor', col: 0, row: 3, kind: 'daten', t: 'Material', s: 'Vorgabe für Revit',
+      was: 'Das Material, das in der Modellierung in Revit verwendet wird. Es kommt aus dem Excel.',
+      skizze: 'Rot eingezeichnet am 16.11.2026, Pfeil vom Excel und weiter zur Modellierung.' },
+    { id: 'ebkph', ph: 'vor', col: 0, row: 4, kind: 'daten', t: 'eBKP-H', s: 'Nummernsystem',
+      was: 'Das Nummernsystem eBKP-H. Daraus stammt die Nummer der Bauteile.',
+      skizze: 'Rot eingezeichnet am 16.11.2026, Pfeil weiter zum Bauteil.' },
+    { id: 'vbt', ph: 'vor', col: 0, row: 5, kind: 'daten', t: 'Bauteil', s: 'mit eBKP-H-Nr.',
+      was: 'Das Bauteil mit seiner eBKP-H-Nummer, wie es in die Modellierung in Revit eingeht.',
+      skizze: 'Rot eingezeichnet am 16.11.2026, Pfeil weiter zur Modellierung.' },
+    { id: 'revit', ph: 'mod', col: 1, row: 0, kind: 'schritt', mode: 'man', t: 'Modellierung in Revit', s: 'mit Material und Bauteilen',
+      was: 'Das Gebäudemodell wird in Revit erstellt, mit dem Material aus dem Excel und den Bauteilen mit eBKP-H-Nr.',
+      skizze: 'Eingekreist. Zwei Pfeile führen hinein: Material und Bauteil, rot eingezeichnet am 16.11.2026.' },
     { id: 'ifcx', ph: 'mod', col: 1, row: 1, kind: 'schritt', mode: 'auto', t: 'IFC-Export', s: 'aus Revit',
       was: 'Das Revit-Modell wird automatisch als IFC exportiert.',
       skizze: 'Grüne Beschriftung «IFC-Export» am Pfeil zwischen Modellierung und Modelldatei.' },
@@ -307,7 +319,11 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
   ];
   var EDGES = [
     { from: 'kbob', to: 'matdb' },
-    { from: 'matdb', to: 'revit', label: 'Anpassungen' },
+    { from: 'matdb', to: 'xmat' },
+    { from: 'xmat', to: 'vmat' },
+    { from: 'vmat', to: 'revit' },
+    { from: 'ebkph', to: 'vbt' },
+    { from: 'vbt', to: 'revit' },
     { from: 'revit', to: 'ifcx' },
     { from: 'ifcx', to: 'ifc' },
     { from: 'ifc', to: 'valid' },
