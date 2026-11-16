@@ -39,8 +39,17 @@ li{display:flex;gap:12px;align-items:flex-start;min-width:0}
 li h3{font-size:15px;font-weight:500;margin:0 0 2px}
 li p{margin:0;color:var(--muted);font-size:14px}
 .basis{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);color:var(--muted);font-size:13px;max-width:84ch}
+
+/* Seiten-Navigation */
+.sitenav{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 18px;padding-bottom:12px;border-bottom:1px solid var(--rule,var(--line));font-family:inherit;font-size:13px}
+.sitenav .brand{font-weight:600;color:var(--muted);margin-right:8px;letter-spacing:.02em}
+.sitenav a{color:var(--ink);text-decoration:none;padding:5px 12px;border:1px solid var(--rule,var(--line));border-radius:999px;background:var(--paper)}
+.sitenav a:hover{border-color:var(--accent)}
+.sitenav a[aria-current="page"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink,var(--panel,#fff))}
+.sitenav a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
 <main>
+<nav class="sitenav" aria-label="Seiten"><span class="brand">Bachelorthesis LCA</span><a href="index.html">LCA Workflow</a><a href="IFC%20Materialkette%20DTV.html" aria-current="page">IFC Materialkette DTV</a></nav>
 <h1>Bauteil, Material und Code im Revit-IFC (Design Transfer View)</h1>
 <p class="sub">So hängen Bauteil, Typ, Schicht- und Profil-Sets, Material, Material-Properties und Assembly Code in der Datei <code>2359_260310_Tragwerk_Hybrid.ifc</code> zusammen. Pfeile zeigen vom verweisenden zum referenzierten Objekt, wie in der STEP-Datei. Unten rechts steht der Umfang nach SIA 2032 für das Tragwerk.</p>
 <figure>
