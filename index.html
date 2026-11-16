@@ -133,6 +133,7 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
 .node .top { display: flex; align-items: center; justify-content: space-between; height: 18px; }
 .mode { position: relative; flex: none; width: 18px; height: 18px; border-radius: 4px; display: grid; place-items: center; }
 .mode svg { width: 14px; height: 14px; display: block; }
+.modes { display: flex; align-items: center; gap: 8px; }
 .mode.man { color: var(--ink); border: 1.5px solid var(--muted); }
 .mode.auto { color: var(--on-auto); background: var(--auto); }
 .mode.auto::after { content: ""; position: absolute; inset: -3px; border-radius: 7px; border: 1.5px solid var(--auto); opacity: 0; animation: pulse 2.4s ease-out infinite; }
@@ -189,7 +190,7 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
     <div>
       <p class="kicker">Dashboard LCA · Entwurf</p>
       <h1>LCA Workflow</h1>
-      <p class="lead">Von den KBOB/EPD-Werten über Revit, IFC, Validierung und Datenbank bis zur adressatengerechten Visualisierung. Klicke einen Schritt an, um Details und Verbindungen zu sehen.</p>
+      <p class="lead">Von den KBOB-Werten über Revit, IFC und Validierung, dann über Quantity Takeoff und Material in Excel und die Datenbank bis zur adressatengerechten Visualisierung. Klicke einen Schritt an, um Details und Verbindungen zu sehen.</p>
     </div>
     <div class="tools" role="group" aria-label="Zoom">
       <button class="tbtn" id="zout" type="button" aria-label="Verkleinern">−</button>
@@ -208,12 +209,12 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
     <aside class="panel" id="panel" aria-live="polite"></aside>
   </div>
 
-  <p class="foot">Entwurf nach handschriftlicher Skizze vom 14.10.2026, ergänzt um die Rückmeldungen vom selben Tag.</p>
+  <p class="foot">Entwurf nach handschriftlicher Skizze vom 14.10.2026, angepasst am 28.10.2026.</p>
 </div>
 
 <script>
 (function () {
-  var NW = 210, NH = 96, GX = 72, GY = 40, PX = 32, TOP = 72, COLS = 6, ROWS = 4;
+  var NW = 210, NH = 96, GX = 72, GY = 40, PX = 32, TOP = 72, COLS = 7, ROWS = 4;
   var SW = PX * 2 + COLS * NW + (COLS - 1) * GX;
   var SH = TOP + ROWS * NH + (ROWS - 1) * GY + 32;
 
@@ -221,27 +222,27 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
     { id: 'vor', name: 'Vorgaben', c: '--p-vor', d: 'genaue Vorgaben' },
     { id: 'mod', name: 'Modellierung', c: '--p-mod', d: 'Revit und IFC' },
     { id: 'val', name: 'Validierung', c: '--p-val', d: 'Smart-Views, Presets' },
-    { id: 'aus', name: 'Auswertung', c: '--p-aus', d: 'Ausmass, Excel' },
-    { id: 'dat', name: 'Datenbank', c: '--p-dat', d: 'DB und FIS' },
+    { id: 'aus', name: 'Auswertung', c: '--p-aus', d: 'Quantities und Material', cols: 2 },
+    { id: 'dat', name: 'Datenbank', c: '--p-dat', d: 'Excel, DB und FIS' },
     { id: 'out', name: 'Ausgabe', c: '--p-out', d: 'Stakeholder, Visualisierung' }
   ];
+  var cc = 0;
+  PH.forEach(function (p) { p.cols = p.cols || 1; p.c0 = cc; cc += p.cols; });
+  var MODETXT = { man: 'Manuell', auto: 'Automatisch', both: 'Manuell und automatisch' };
   var KIND = { daten: 'Daten', datei: 'Datei', schritt: 'Schritt', vorgabe: 'Vorgabe', system: 'System' };
 
   var NODES = [
-    { id: 'kbob', ph: 'vor', col: 0, row: 0, kind: 'daten', t: 'KBOB/EPD-Werte', s: 'Tabelle mit Umweltkennwerten',
-      was: 'Ausgangsdaten für die Ökobilanz: eine Tabelle mit KBOB- und EPD-Werten.',
+    { id: 'kbob', ph: 'vor', col: 0, row: 0, kind: 'daten', t: 'KBOB-Werte', s: 'Tabelle mit Umweltkennwerten',
+      was: 'Ausgangsdaten für die Ökobilanz: eine Tabelle mit KBOB-Werten.',
       skizze: 'Eingekreist, ganz oben unter «genaue Vorgaben».' },
     { id: 'matdb', ph: 'vor', col: 0, row: 1, kind: 'daten', t: 'Materialdatenbank', s: 'Vereinheitlichung',
       was: 'Die Werte aus der Tabelle werden vereinheitlicht und in einer Materialdatenbank geführt.',
       skizze: 'Pfeil von der Tabelle zur Materialdatenbank, dazu die grüne Notiz «Vereinheitlichung». Von hier geht der Pfeil «Anpassungen» zur Modellierung.' },
-    { id: 'bauteil', ph: 'vor', col: 0, row: 2, kind: 'daten', t: 'Bauteile und Schichten', s: 'mit eBKP-H-Nr.',
-      was: 'Bauteile mit ihren Schichten. Jedem Bauteil wird eine eBKP-H-Nummer zugeordnet, die in die Modellierung einfliesst.',
-      skizze: 'Bauteil und Schichten sind mit einem Doppelpfeil verbunden und gemeinsam eingekreist. Die eBKP-H-Nr. ist blau eingekreist, der Pfeil führt zum Bauteil.' },
     { id: 'revit', ph: 'mod', col: 1, row: 0, kind: 'schritt', mode: 'man', t: 'Modellierung in Revit', s: 'mit Anpassungen',
-      was: 'Das Gebäudemodell wird in Revit erstellt, mit den angepassten Materialien sowie den Bauteilen und Schichten samt Nummer.',
-      skizze: 'Eingekreist. Zwei Pfeile führen hinein: «Anpassungen» aus der Materialdatenbank und die Schleife von Bauteil und Schichten.' },
-    { id: 'ifcx', ph: 'mod', col: 1, row: 1, kind: 'schritt', mode: 'man', t: 'IFC-Export', s: 'aus Revit',
-      was: 'Das Revit-Modell wird als IFC exportiert.',
+      was: 'Das Gebäudemodell wird in Revit erstellt, mit den angepassten Materialien.',
+      skizze: 'Eingekreist. Der Pfeil «Anpassungen» kommt aus der Materialdatenbank.' },
+    { id: 'ifcx', ph: 'mod', col: 1, row: 1, kind: 'schritt', mode: 'auto', t: 'IFC-Export', s: 'aus Revit',
+      was: 'Das Revit-Modell wird automatisch als IFC exportiert.',
       skizze: 'Grüne Beschriftung «IFC-Export» am Pfeil zwischen Modellierung und Modelldatei.' },
     { id: 'ifc', ph: 'mod', col: 1, row: 2, kind: 'datei', t: 'Modell.ifc', s: 'Übergabe an die Validierung',
       was: 'Die exportierte IFC-Datei ist die Grundlage für die Validierung.',
@@ -249,53 +250,71 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
     { id: 'presets', ph: 'val', col: 2, row: 0, kind: 'vorgabe', t: 'Smart-Views und Presets', s: 'vorbereitet',
       was: 'Vorbereitete Smart-Views und Presets, mit denen das Modell geprüft wird.',
       skizze: 'Grün geschrieben: «Vorbereitete Smart-Views», daneben «Presets».' },
-    { id: 'valid', ph: 'val', col: 2, row: 1, kind: 'schritt', mode: 'auto', t: 'Validierung', s: 'mit Smart-Views',
-      was: 'Das IFC-Modell wird mit den vorbereiteten Smart-Views validiert.',
+    { id: 'valid', ph: 'val', col: 2, row: 1, kind: 'schritt', mode: 'both', t: 'Validierung', s: 'mit Smart-Views',
+      was: 'Das IFC-Modell wird mit den vorbereiteten Smart-Views validiert. Der Schritt läuft teils automatisch und wird teils von Hand ausgeführt.',
       skizze: 'Blau unterstrichen: «Validierung (Smart-Views)».' },
     { id: 'vmodell', ph: 'val', col: 2, row: 2, kind: 'datei', t: 'Validiertes Modell', s: 'geprüfte Grundlage',
-      was: 'Das Modell nach der Validierung. Von hier aus werden die Mengen ausgewertet.',
-      skizze: 'Grau hinterlegt als eigener Zwischenstand.' },
-    { id: 'ausmass', ph: 'aus', col: 3, row: 0, kind: 'schritt', mode: 'auto', t: 'Ausmass', s: 'Erstellung von Listen',
-      was: 'Aus dem validierten Modell werden Listen mit den Mengen erstellt.',
-      skizze: 'Blau: «Ausmass», darunter «Erstellung von Listen».' },
-    { id: 'excel', ph: 'aus', col: 3, row: 1, kind: 'datei', t: 'Excel-File', s: 'Vorlage mit allen Funktionen',
-      was: 'Die Listen landen in einer Excel-Vorlage, die alle benötigten Funktionen bereits enthält.',
-      skizze: 'Grün: «Excel-File», «Vorlage mit allen Funktionen».' },
-    { id: 'kontrolle', ph: 'aus', col: 3, row: 2, kind: 'schritt', mode: 'man', t: 'Kontrolle und Anpassungen', s: 'der Ergebnisse',
-      was: 'Die Ergebnisse werden kontrolliert und bei Bedarf angepasst.',
-      skizze: 'Pfeil von der Excel-Vorlage nach unten zu «Kontrolle und Anpassungen».' },
-    { id: 'db', ph: 'dat', col: 4, row: 2, kind: 'daten', t: 'Datenbank (DB)', s: 'Logik',
-      was: 'Die kontrollierten Daten werden in einer Datenbank mit eigener Logik geführt. Sie speist die Visualisierung, das FIS ist daran angehängt.',
+      was: 'Das Modell nach der Validierung. Von hier gehen zwei Pfeile weg: Quantity Takeoff und Material.',
+      skizze: 'Grau hinterlegt als eigener Zwischenstand. Die zwei Pfeile sind nach deiner Rückmeldung ergänzt.' },
+    { id: 'qto', ph: 'aus', col: 3, row: 1, kind: 'schritt', mode: 'auto', t: 'Quantity Takeoff', s: 'Ausmass, Mengenlisten',
+      was: 'Aus dem validierten Modell werden die Mengen ausgezogen. Dazu gehören Bauteile und Schichten mit eBKP-H-Nr., der Bewehrungsgehalt und der Holz-Ständeranteil.',
+      skizze: 'In der Skizze «Ausmass» mit «Erstellung von Listen». Nach deiner Rückmeldung der erste von zwei Pfeilen aus dem validierten Modell.' },
+    { id: 'mat', ph: 'aus', col: 3, row: 3, kind: 'schritt', mode: 'auto', prov: true, t: 'Material', s: 'Materialien aus dem Modell',
+      was: 'Aus dem validierten Modell werden die Materialien ausgezogen. Die Bilanzwerte gehören dazu.',
+      skizze: 'Auf deinen Wunsch ergänzt, der zweite Pfeil aus dem validierten Modell.' },
+    { id: 'bt', ph: 'aus', col: 4, row: 0, kind: 'daten', t: 'Bauteile und Schichten', s: 'mit eBKP-H-Nr.',
+      was: 'Bauteile mit ihren Schichten und der eBKP-H-Nummer. Sie gehören zu den Quantities.',
+      skizze: 'In der Skizze mit Doppelpfeil verbunden und gemeinsam eingekreist, die eBKP-H-Nr. blau eingekreist. Nach deiner Rückmeldung zu den Quantities verschoben.' },
+    { id: 'bew', ph: 'aus', col: 4, row: 1, kind: 'daten', t: 'Bewehrungsgehalt', s: 'zu den Quantities',
+      was: 'Der Bewehrungsgehalt gehört zu den Quantities.',
+      skizze: 'Auf deinen Wunsch ergänzt.' },
+    { id: 'holz', ph: 'aus', col: 4, row: 2, kind: 'daten', t: 'Holz-Ständeranteil', s: 'zu den Quantities',
+      was: 'Der Holz-Ständeranteil gehört zu den Quantities.',
+      skizze: 'Auf deinen Wunsch ergänzt.' },
+    { id: 'bil', ph: 'aus', col: 4, row: 3, kind: 'daten', t: 'Bilanzwerte', s: 'zu Material',
+      was: 'Die Bilanzwerte gehören zum Material.',
+      skizze: 'Auf deinen Wunsch ergänzt.' },
+    { id: 'excel', ph: 'dat', col: 5, row: 1, kind: 'datei', t: 'Excel-File', s: 'Vorlage mit allen Funktionen',
+      was: 'Quantities und Material gehen direkt in die Excel-Vorlage, die alle benötigten Funktionen bereits enthält. Von dort geht es in die Datenbank.',
+      skizze: 'Grün: «Excel-File», «Vorlage mit allen Funktionen». Nach deiner Rückmeldung direkt nach dem Auszug und direkt vor der Datenbank.' },
+    { id: 'db', ph: 'dat', col: 5, row: 2, kind: 'daten', t: 'Datenbank (DB)', s: 'Logik',
+      was: 'Die Daten aus dem Excel-File werden in einer Datenbank mit eigener Logik geführt. Sie speist die Visualisierung, das FIS ist daran angehängt.',
       skizze: 'Eingekreist «DB», links daneben «Logik».' },
-    { id: 'fis', ph: 'dat', col: 4, row: 3, kind: 'system', t: 'FIS', s: 'internes System',
+    { id: 'fis', ph: 'dat', col: 5, row: 3, kind: 'system', t: 'FIS', s: 'internes System',
       was: 'Das FIS ist das interne System und hängt hinter der Datenbank.',
       skizze: 'In der Skizze steht «FIS» unten mit einem Doppelpfeil. Nach deiner Rückmeldung habe ich es an die Datenbank angehängt.' },
-    { id: 'stkh', ph: 'out', col: 5, row: 0, kind: 'daten', t: 'Stakeholder', s: 'Beteiligte und Adressaten',
+    { id: 'stkh', ph: 'out', col: 6, row: 0, kind: 'daten', t: 'Stakeholder', s: 'Beteiligte und Adressaten',
       was: 'Die Stakeholder, für die die Ergebnisse aufbereitet werden. Mit ihnen werden die Interviews geführt.',
       skizze: 'In der Skizze kein eigener Schritt, auf deinen Wunsch ergänzt.' },
-    { id: 'interv', ph: 'out', col: 5, row: 1, kind: 'schritt', mode: 'man', t: 'Interviews', s: 'mit den Stakeholdern',
+    { id: 'interv', ph: 'out', col: 6, row: 1, kind: 'schritt', mode: 'man', t: 'Interviews', s: 'mit den Stakeholdern',
       was: 'Interviews mit den Stakeholdern. Daraus entsteht die Stakeholder-Liste.',
       skizze: 'In der Skizze «Interviews» in Anführungszeichen neben dem FIS. Nach deiner Rückmeldung zwischen Stakeholder und Liste gesetzt.' },
-    { id: 'stake', ph: 'out', col: 5, row: 2, kind: 'daten', t: 'Stakeholder-Liste', s: 'wer bekommt was',
+    { id: 'stake', ph: 'out', col: 6, row: 2, kind: 'daten', t: 'Stakeholder-Liste', s: 'wer bekommt was',
       was: 'Die Liste der Stakeholder bestimmt, für wen die Visualisierung aufbereitet wird.',
       skizze: 'Grün: «Stakeholder-Liste», direkt unter «adressatengerecht».' },
-    { id: 'viz', ph: 'out', col: 5, row: 3, kind: 'schritt', mode: 'auto', t: 'Visualisierung', s: 'adressatengerecht',
-      was: 'Die Ergebnisse aus der Datenbank werden so aufbereitet, dass sie zu den jeweiligen Adressaten passen.',
+    { id: 'viz', ph: 'out', col: 6, row: 3, kind: 'schritt', mode: 'both', t: 'Visualisierung', s: 'adressatengerecht',
+      was: 'Die Ergebnisse aus der Datenbank werden so aufbereitet, dass sie zu den jeweiligen Adressaten passen. Der Schritt läuft teils automatisch und wird teils von Hand ausgeführt.',
       skizze: 'Grün: «Visualisierung», darunter «adressatengerecht».' }
   ];
   var EDGES = [
     { from: 'kbob', to: 'matdb' },
     { from: 'matdb', to: 'revit', label: 'Anpassungen' },
-    { from: 'bauteil', to: 'revit' },
     { from: 'revit', to: 'ifcx' },
     { from: 'ifcx', to: 'ifc' },
     { from: 'ifc', to: 'valid' },
     { from: 'presets', to: 'valid' },
     { from: 'valid', to: 'vmodell' },
-    { from: 'vmodell', to: 'ausmass' },
-    { from: 'ausmass', to: 'excel' },
-    { from: 'excel', to: 'kontrolle' },
-    { from: 'kontrolle', to: 'db' },
+    { from: 'vmodell', to: 'qto' },
+    { from: 'vmodell', to: 'mat' },
+    { from: 'qto', to: 'bt' },
+    { from: 'qto', to: 'bew' },
+    { from: 'qto', to: 'holz' },
+    { from: 'mat', to: 'bil' },
+    { from: 'bt', to: 'excel' },
+    { from: 'bew', to: 'excel' },
+    { from: 'holz', to: 'excel' },
+    { from: 'bil', to: 'excel' },
+    { from: 'excel', to: 'db' },
     { from: 'db', to: 'fis' },
     { from: 'db', to: 'viz' },
     { from: 'stkh', to: 'interv' },
@@ -350,16 +369,25 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
     return s;
   }
 
+  function modeSet(m) {
+    if (m !== 'both') return modeEl(m);
+    var w = mk('span', 'modes');
+    w.appendChild(modeEl('man'));
+    w.appendChild(modeEl('auto'));
+    return w;
+  }
+
   stage.style.width = SW + 'px';
   stage.style.height = SH + 'px';
 
   /* Phasenbänder */
-  PH.forEach(function (p, c) {
+  PH.forEach(function (p) {
+    var bw = p.cols * NW + (p.cols - 1) * GX + 28;
     var b = mk('div', 'band');
-    b.style.cssText = 'left:' + (colX(c) - 14) + 'px;top:16px;width:' + (NW + 28) + 'px;height:' + (SH - 32) + 'px;--pc:var(' + p.c + ')';
+    b.style.cssText = 'left:' + (colX(p.c0) - 14) + 'px;top:16px;width:' + bw + 'px;height:' + (SH - 32) + 'px;--pc:var(' + p.c + ')';
     stage.appendChild(b);
     var l = mk('div', 'bandlabel');
-    l.style.cssText = 'left:' + colX(c) + 'px;top:28px;--pc:var(' + p.c + ')';
+    l.style.cssText = 'left:' + colX(p.c0) + 'px;top:28px;--pc:var(' + p.c + ')';
     l.appendChild(document.createTextNode(p.name));
     l.appendChild(mk('small', '', p.d));
     stage.appendChild(l);
@@ -393,7 +421,7 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
   }
   EDGES.forEach(function (e) {
     var g = geom(e);
-    var p = mks('path', { d: g.d, 'class': 'edge' + (N[e.to].mode === 'auto' ? ' auto' : ''), 'marker-end': 'url(#ah)' });
+    var p = mks('path', { d: g.d, 'class': 'edge' + (N[e.to].mode === 'auto' || N[e.to].mode === 'both' ? ' auto' : ''), 'marker-end': 'url(#ah)' });
     if (e.both) p.setAttribute('marker-start', 'url(#ah)');
     svg.appendChild(p);
     e.pathEl = p;
@@ -412,10 +440,10 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
     b.type = 'button';
     b.style.cssText = 'left:' + colX(n.col) + 'px;top:' + rowY(n.row) + 'px;--pc:var(' + PHM[n.ph].c + ')';
     b.setAttribute('aria-pressed', 'false');
-    b.setAttribute('aria-label', n.t + ', ' + KIND[n.kind] + ', Phase ' + PHM[n.ph].name + (n.flag ? ', zu klären' : '') + (n.mode ? ', ' + (n.mode === 'man' ? 'manuell' : 'automatisch') : ''));
+    b.setAttribute('aria-label', n.t + ', ' + KIND[n.kind] + ', Phase ' + PHM[n.ph].name + (n.flag ? ', zu klären' : '') + (n.mode ? ', ' + MODETXT[n.mode].toLowerCase() : ''));
     var top = mk('span', 'top');
     top.appendChild(mk('span', 'kind', KIND[n.kind]));
-    if (n.mode) top.appendChild(modeEl(n.mode));
+    if (n.mode) top.appendChild(modeSet(n.mode));
     b.appendChild(top);
     b.appendChild(mk('span', 'ttl', n.t));
     b.appendChild(mk('span', 'sub', n.s));
@@ -437,7 +465,7 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
 
   function anyFilter() { return onlyOpen || !!modeF || Object.keys(phFilter).length > 0; }
   function nodeVisible(n) {
-    if (modeF) return n.mode === modeF;
+    if (modeF) return n.mode === modeF || n.mode === 'both';
     if (onlyOpen) return !!n.flag;
     if (Object.keys(phFilter).length) return !!phFilter[n.ph];
     return true;
@@ -525,14 +553,16 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
     var t1 = mk('span', 'tag', PHM[n.ph].name); t1.style.setProperty('--pc', 'var(' + PHM[n.ph].c + ')');
     tags.appendChild(t1);
     tags.appendChild(mk('span', 'tag', KIND[n.kind]));
-    if (n.mode) tags.appendChild(mk('span', 'tag', n.mode === 'man' ? 'Manuell' : 'Automatisch'));
+    if (n.mode) tags.appendChild(mk('span', 'tag', MODETXT[n.mode]));
     panel.appendChild(tags);
     if (n.mode) {
       var ab = mk('div', 'links');
       ab.appendChild(mk('p', '', n.mode === 'man'
         ? 'Dieser Schritt wird von Hand ausgeführt.'
-        : 'Dieser Schritt läuft automatisch, sobald die Eingangsdaten vorliegen.'));
-      ab.appendChild(mk('p', 'hint', 'Vorläufige Einstufung, bitte bestätigen.'));
+        : n.mode === 'auto'
+          ? 'Dieser Schritt läuft automatisch, sobald die Eingangsdaten vorliegen.'
+          : 'Dieser Schritt läuft teils automatisch und wird teils von Hand ausgeführt.'));
+      if (n.prov) ab.appendChild(mk('p', 'hint', 'Vorläufige Einstufung, bitte bestätigen.'));
       panel.appendChild(section('Ablauf', ab));
     }
 
