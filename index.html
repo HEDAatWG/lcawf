@@ -199,7 +199,7 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
     <div>
       <p class="kicker">Dashboard LCA · Entwurf</p>
       <h1>LCA Workflow</h1>
-      <p class="lead">Von den KBOB-Werten über Revit, IFC und Validierung, dann über Quantity Takeoff und Material in Excel und die Datenbank bis zur adressatengerechten Visualisierung. Klicke einen Schritt an, um Details und Verbindungen zu sehen.</p>
+      <p class="lead">Von den KBOB- und EPD-Werten über Revit, IFC und Validierung, dann über Quantity Takeoff und Material in eine Liste bis zur adressatengerechten Visualisierung. Klicke einen Schritt an, um Details und Verbindungen zu sehen.</p>
     </div>
     <div class="tools" role="group" aria-label="Zoom">
       <button class="tbtn" id="zout" type="button" aria-label="Verkleinern">−</button>
@@ -218,22 +218,22 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
     <aside class="panel" id="panel" aria-live="polite"></aside>
   </div>
 
-  <p class="foot">Entwurf nach handschriftlicher Skizze vom 14.10.2026, angepasst am 16.11.2026.</p>
+  <p class="foot">Entwurf nach handschriftlicher Skizze vom 14.10.2026, angepasst am 16.11.2026 und 23.11.2026.</p>
 </div>
 
 <script>
 (function () {
-  var NW = 210, NH = 96, GX = 72, GY = 40, PX = 32, TOP = 72, COLS = 7, ROWS = 6;
+  var NW = 210, NH = 96, GX = 72, GY = 40, PX = 32, TOP = 72, COLS = 10, ROWS = 4;
   var SW = PX * 2 + COLS * NW + (COLS - 1) * GX;
   var SH = TOP + ROWS * NH + (ROWS - 1) * GY + 32;
 
   var PH = [
-    { id: 'vor', name: 'Vorgaben', c: '--p-vor', d: 'genaue Vorgaben' },
-    { id: 'mod', name: 'Modellierung', c: '--p-mod', d: 'Revit und IFC' },
-    { id: 'val', name: 'Validierung', c: '--p-val', d: 'Smart-Views, Presets' },
-    { id: 'aus', name: 'Auswertung', c: '--p-aus', d: 'Quantities und Material', cols: 2 },
-    { id: 'dat', name: 'Datenbank', c: '--p-dat', d: 'Excel, DB und FIS' },
-    { id: 'out', name: 'Ausgabe', c: '--p-out', d: 'Stakeholder, Visualisierung' }
+    { id: 'vor', name: 'Daten', c: '--p-vor', d: 'KBOB, EPD und eBKP-H' },
+    { id: 'mod', name: 'Modellierung', c: '--p-mod', d: 'Revit und IFC', cols: 2 },
+    { id: 'val', name: 'Validierung', c: '--p-val', d: 'Modell.ifc, Smart-Views', cols: 2 },
+    { id: 'aus', name: 'Datenauswertung', c: '--p-aus', d: 'Quantities, Material, Listen', cols: 3 },
+    { id: 'dat', name: 'Datenverwaltung', c: '--p-dat', d: 'Liste und FIS' },
+    { id: 'out', name: 'Visualisierung', c: '--p-out', d: 'adressatengerecht' }
   ];
   var cc = 0;
   PH.forEach(function (p) { p.cols = p.cols || 1; p.c0 = cc; cc += p.cols; });
@@ -242,87 +242,58 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
 
   var NODES = [
     { id: 'kbob', ph: 'vor', col: 0, row: 0, kind: 'daten', t: 'KBOB-Werte', s: 'Tabelle mit Umweltkennwerten',
-      was: 'Ausgangsdaten für die Ökobilanz: eine Tabelle mit KBOB-Werten.',
-      skizze: 'Eingekreist, ganz oben unter «genaue Vorgaben».' },
+      was: 'Ausgangsdaten für die Ökobilanz: eine Tabelle mit KBOB-Werten.' },
     { id: 'matdb', ph: 'vor', col: 0, row: 1, kind: 'daten', t: 'Materialdatenbank', s: 'Vereinheitlichung',
-      was: 'Die Werte aus der Tabelle werden vereinheitlicht und in einer Materialdatenbank geführt. Daraus entsteht ein Excel mit dem Material.',
-      skizze: 'Pfeil von der Tabelle zur Materialdatenbank, dazu die grüne Notiz «Vereinheitlichung». Der frühere Pfeil «Anpassungen» direkt zur Modellierung ist gestrichen, es geht jetzt über das Excel.' },
-    { id: 'xmat', ph: 'vor', col: 0, row: 2, kind: 'datei', t: 'Excel', s: 'aus der Materialdatenbank',
-      was: 'Die Materialdatenbank wird als Excel ausgegeben. Daraus kommt das Material für die Modellierung.',
-      skizze: 'Rot eingezeichnet am 16.11.2026, unter der Materialdatenbank.' },
-    { id: 'vmat', ph: 'vor', col: 0, row: 3, kind: 'daten', t: 'Material', s: 'Vorgabe für Revit',
-      was: 'Das Material, das in der Modellierung in Revit verwendet wird. Es kommt aus dem Excel.',
-      skizze: 'Rot eingezeichnet am 16.11.2026, Pfeil vom Excel und weiter zur Modellierung.' },
-    { id: 'ebkph', ph: 'vor', col: 0, row: 4, kind: 'daten', t: 'eBKP-H', s: 'Nummernsystem',
-      was: 'Das Nummernsystem eBKP-H. Daraus stammt die Nummer der Bauteile.',
-      skizze: 'Rot eingezeichnet am 16.11.2026, Pfeil weiter zum Bauteil.' },
-    { id: 'vbt', ph: 'vor', col: 0, row: 5, kind: 'daten', t: 'Bauteil', s: 'mit eBKP-H-Nr.',
-      was: 'Das Bauteil mit seiner eBKP-H-Nummer, wie es in die Modellierung in Revit eingeht.',
-      skizze: 'Rot eingezeichnet am 16.11.2026, Pfeil weiter zur Modellierung.' },
-    { id: 'revit', ph: 'mod', col: 1, row: 0, kind: 'schritt', mode: 'man', t: 'Modellierung in Revit', s: 'mit Material und Bauteilen',
-      was: 'Das Gebäudemodell wird in Revit erstellt, mit dem Material aus dem Excel und den Bauteilen mit eBKP-H-Nr.',
-      skizze: 'Eingekreist. Zwei Pfeile führen hinein: Material und Bauteil, rot eingezeichnet am 16.11.2026.' },
-    { id: 'ifcx', ph: 'mod', col: 1, row: 1, kind: 'schritt', mode: 'auto', t: 'IFC-Export', s: 'aus Revit',
-      was: 'Das Revit-Modell wird automatisch als IFC exportiert.',
-      skizze: 'Grüne Beschriftung «IFC-Export» am Pfeil zwischen Modellierung und Modelldatei.' },
-    { id: 'ifc', ph: 'mod', col: 1, row: 2, kind: 'datei', t: 'Modell.ifc', s: 'Übergabe an die Validierung',
-      was: 'Die exportierte IFC-Datei ist die Grundlage für die Validierung.',
-      skizze: 'Der Pfeil führt vom IFC-Export zu «Modell.ifc» und weiter zur Validierung.' },
-    { id: 'presets', ph: 'val', col: 2, row: 0, kind: 'vorgabe', t: 'Smart-Views und Presets', s: 'vorbereitet',
-      was: 'Vorbereitete Smart-Views und Presets, mit denen das Modell geprüft wird.',
-      skizze: 'Grün geschrieben: «Vorbereitete Smart-Views», daneben «Presets».' },
-    { id: 'valid', ph: 'val', col: 2, row: 1, kind: 'schritt', mode: 'both', t: 'Validierung', s: 'mit Smart-Views',
-      was: 'Das IFC-Modell wird mit den vorbereiteten Smart-Views validiert. Der Schritt läuft teils automatisch und wird teils von Hand ausgeführt.',
-      skizze: 'Blau unterstrichen: «Validierung (Smart-Views)».' },
-    { id: 'vmodell', ph: 'val', col: 2, row: 2, kind: 'datei', t: 'Validiertes Modell', s: 'geprüfte Grundlage',
-      was: 'Das Modell nach der Validierung. Von hier gehen zwei Pfeile weg: Quantity Takeoff und Material.',
-      skizze: 'Grau hinterlegt als eigener Zwischenstand. Die zwei Pfeile sind nach deiner Rückmeldung ergänzt.' },
-    { id: 'qto', ph: 'aus', col: 3, row: 1, kind: 'schritt', mode: 'auto', t: 'Quantity Takeoff', s: 'Ausmass, Mengenlisten',
-      was: 'Aus dem validierten Modell werden die Mengen ausgezogen. Dazu gehören Bauteile und Schichten mit eBKP-H-Nr., der Bewehrungsgehalt und der Holz-Ständeranteil.',
-      skizze: 'In der Skizze «Ausmass» mit «Erstellung von Listen». Nach deiner Rückmeldung der erste von zwei Pfeilen aus dem validierten Modell.' },
-    { id: 'mat', ph: 'aus', col: 3, row: 3, kind: 'schritt', mode: 'auto', prov: true, t: 'Material', s: 'Materialien aus dem Modell',
-      was: 'Aus dem validierten Modell werden die Materialien ausgezogen. Die Bilanzwerte gehören dazu.',
-      skizze: 'Auf deinen Wunsch ergänzt, der zweite Pfeil aus dem validierten Modell.' },
-    { id: 'bt', ph: 'aus', col: 4, row: 0, kind: 'daten', t: 'Bauteile und Schichten', s: 'mit eBKP-H-Nr.',
-      was: 'Bauteile mit ihren Schichten und der eBKP-H-Nummer. Sie gehören zu den Quantities.',
-      skizze: 'In der Skizze mit Doppelpfeil verbunden und gemeinsam eingekreist, die eBKP-H-Nr. blau eingekreist. Nach deiner Rückmeldung zu den Quantities verschoben.' },
-    { id: 'bew', ph: 'aus', col: 4, row: 1, kind: 'daten', t: 'Bewehrungsgehalt', s: 'zu den Quantities',
-      was: 'Der Bewehrungsgehalt gehört zu den Quantities.',
-      skizze: 'Auf deinen Wunsch ergänzt.' },
-    { id: 'holz', ph: 'aus', col: 4, row: 2, kind: 'daten', t: 'Holz-Ständeranteil', s: 'zu den Quantities',
-      was: 'Der Holz-Ständeranteil gehört zu den Quantities.',
-      skizze: 'Auf deinen Wunsch ergänzt.' },
-    { id: 'bil', ph: 'aus', col: 4, row: 3, kind: 'daten', t: 'Bilanzwerte', s: 'zu Material',
-      was: 'Die Bilanzwerte gehören zum Material.',
-      skizze: 'Auf deinen Wunsch ergänzt.' },
-    { id: 'excel', ph: 'dat', col: 5, row: 1, kind: 'datei', t: 'Excel-File', s: 'Vorlage mit allen Funktionen',
-      was: 'Quantities und Material gehen direkt in die Excel-Vorlage, die alle benötigten Funktionen bereits enthält. Von dort geht es in die Datenbank.',
-      skizze: 'Grün: «Excel-File», «Vorlage mit allen Funktionen». Nach deiner Rückmeldung direkt nach dem Auszug und direkt vor der Datenbank.' },
-    { id: 'db', ph: 'dat', col: 5, row: 2, kind: 'daten', t: 'Datenbank (DB)', s: 'Logik',
-      was: 'Die Daten aus dem Excel-File werden in einer Datenbank mit eigener Logik geführt. Sie speist die Visualisierung, das FIS ist daran angehängt.',
-      skizze: 'Eingekreist «DB», links daneben «Logik».' },
-    { id: 'fis', ph: 'dat', col: 5, row: 3, kind: 'system', t: 'FIS', s: 'internes System',
-      was: 'Das FIS ist das interne System und hängt hinter der Datenbank.',
-      skizze: 'In der Skizze steht «FIS» unten mit einem Doppelpfeil. Nach deiner Rückmeldung habe ich es an die Datenbank angehängt.' },
-    { id: 'stkh', ph: 'out', col: 6, row: 0, kind: 'daten', t: 'Stakeholder', s: 'Beteiligte und Adressaten',
-      was: 'Die Stakeholder, für die die Ergebnisse aufbereitet werden. Mit ihnen werden die Interviews geführt.',
-      skizze: 'In der Skizze kein eigener Schritt, auf deinen Wunsch ergänzt.' },
-    { id: 'interv', ph: 'out', col: 6, row: 1, kind: 'schritt', mode: 'man', t: 'Interviews', s: 'mit den Stakeholdern',
-      was: 'Interviews mit den Stakeholdern. Daraus entsteht die Stakeholder-Liste.',
-      skizze: 'In der Skizze «Interviews» in Anführungszeichen neben dem FIS. Nach deiner Rückmeldung zwischen Stakeholder und Liste gesetzt.' },
-    { id: 'stake', ph: 'out', col: 6, row: 2, kind: 'daten', t: 'Stakeholder-Liste', s: 'wer bekommt was',
-      was: 'Die Liste der Stakeholder bestimmt, für wen die Visualisierung aufbereitet wird.',
-      skizze: 'Grün: «Stakeholder-Liste», direkt unter «adressatengerecht».' },
-    { id: 'viz', ph: 'out', col: 6, row: 3, kind: 'schritt', mode: 'both', t: 'Visualisierung', s: 'adressatengerecht',
-      was: 'Die Ergebnisse aus der Datenbank werden so aufbereitet, dass sie zu den jeweiligen Adressaten passen. Der Schritt läuft teils automatisch und wird teils von Hand ausgeführt.',
-      skizze: 'Grün: «Visualisierung», darunter «adressatengerecht».' }
+      was: 'Die KBOB-Werte und die EPD-Werte werden vereinheitlicht und in einer Materialdatenbank geführt. Daraus kommt das Material für die Modellierung.' },
+    { id: 'epd', ph: 'vor', col: 0, row: 2, kind: 'daten', t: 'EPD-Werte', s: 'Umweltproduktdeklarationen',
+      was: 'EPD-Werte als zweite Quelle für die Materialdatenbank.' },
+    { id: 'ebkph', ph: 'vor', col: 0, row: 3, kind: 'daten', t: 'eBKP-H', s: 'Nummernsystem',
+      was: 'Das Nummernsystem eBKP-H. Daraus stammt die Nummer der Bauteile.' },
+    { id: 'vmat', ph: 'mod', col: 1, row: 0, kind: 'daten', t: 'Material', s: 'Vorgabe für Revit',
+      was: 'Das Material aus der Materialdatenbank, das in der Modellierung in Revit verwendet wird.' },
+    { id: 'vbt', ph: 'mod', col: 1, row: 1, kind: 'daten', t: 'Bauteil', s: 'mit eBKP-H-Nr.',
+      was: 'Das Bauteil mit seiner eBKP-H-Nummer, wie es in die Modellierung in Revit eingeht.' },
+    { id: 'revit', ph: 'mod', col: 2, row: 0, kind: 'schritt', mode: 'man', t: 'Modellierung in Revit', s: 'mit Material und Bauteilen',
+      was: 'Das Gebäudemodell wird in Revit erstellt, mit dem Material aus der Materialdatenbank und den Bauteilen mit eBKP-H-Nr.' },
+    { id: 'ifcx', ph: 'mod', col: 2, row: 1, kind: 'schritt', mode: 'auto', t: 'IFC-Export', s: 'aus Revit',
+      was: 'Das Revit-Modell wird automatisch als IFC exportiert.' },
+    { id: 'ifc', ph: 'val', col: 3, row: 1, kind: 'datei', t: 'Modell.ifc', s: 'Grundlage der Validierung',
+      was: 'Die exportierte IFC-Datei ist die Grundlage für die Validierung.' },
+    { id: 'presets', ph: 'val', col: 3, row: 0, kind: 'vorgabe', t: 'Smart-Views', s: 'in BIMcollab vorbereitet',
+      was: 'In BIMcollab vorbereitete Smart-Views, mit denen das Modell geprüft wird.' },
+    { id: 'valid', ph: 'val', col: 4, row: 1, kind: 'schritt', mode: 'both', t: 'Validierung', s: 'mit Smart-Views',
+      was: 'Das IFC-Modell wird mit den vorbereiteten Smart-Views validiert. Der Schritt läuft teils automatisch und wird teils von Hand ausgeführt.' },
+    { id: 'vmodell', ph: 'val', col: 4, row: 2, kind: 'datei', t: 'Validiertes Modell', s: 'geprüfte Grundlage',
+      was: 'Das Modell nach der Validierung. Von hier gehen zwei Pfeile weg: Quantity Takeoff und Material.' },
+    { id: 'qto', ph: 'aus', col: 5, row: 1, kind: 'schritt', mode: 'auto', t: 'Quantity Takeoff', s: 'Ausmass, Mengenlisten',
+      was: 'Aus dem validierten Modell werden die Mengen ausgezogen. Dazu gehören Bauteile und Schichten mit eBKP-H-Nr., der Bewehrungsgehalt und der Holz-Ständeranteil.' },
+    { id: 'mat', ph: 'aus', col: 5, row: 3, kind: 'schritt', mode: 'auto', prov: true, t: 'Material', s: 'Materialien aus dem Modell',
+      was: 'Aus dem validierten Modell werden die Materialien ausgezogen. Die Bilanzwerte gehören dazu.' },
+    { id: 'bt', ph: 'aus', col: 6, row: 0, kind: 'daten', t: 'Bauteile und Schichten', s: 'mit eBKP-H-Nr.',
+      was: 'Bauteile mit ihren Schichten und der eBKP-H-Nummer. Sie gehören zu den Quantities.' },
+    { id: 'bew', ph: 'aus', col: 6, row: 1, kind: 'daten', t: 'Bewehrungsgehalt', s: 'zu den Quantities',
+      was: 'Der Bewehrungsgehalt gehört zu den Quantities.' },
+    { id: 'holz', ph: 'aus', col: 6, row: 2, kind: 'daten', t: 'Holz-Ständeranteil', s: 'zu den Quantities',
+      was: 'Der Holz-Ständeranteil gehört zu den Quantities.' },
+    { id: 'bil', ph: 'aus', col: 6, row: 3, kind: 'daten', t: 'Bilanzwerte', s: 'zu Material',
+      was: 'Die Bilanzwerte gehören zum Material.' },
+    { id: 'lausg', ph: 'aus', col: 7, row: 1, kind: 'schritt', mode: 'man', t: 'Listenausgabe', s: 'Ausgabe von Listen in BIMcollab Zoom',
+      was: 'Quantities und Material werden als Listen in BIMcollab Zoom ausgegeben. Daraus entsteht die Liste.' },
+    { id: 'liste', ph: 'dat', col: 8, row: 1, kind: 'datei', t: 'Liste', s: 'Quantities und Material',
+      was: 'Quantities und Material werden in einer Liste zusammengeführt. Sie speist die Visualisierung, das FIS ist daran angehängt.' },
+    { id: 'fis', ph: 'dat', col: 8, row: 2, kind: 'system', t: 'FIS', s: 'internes System',
+      was: 'Das FIS ist das interne System und hängt hinter der Liste.' },
+    { id: 'stake', ph: 'out', col: 9, row: 0, kind: 'daten', t: 'Interessen Stakeholder', s: 'wer braucht was',
+      was: 'Die Interessen der Stakeholder bestimmen, wie die Visualisierung aufbereitet wird.' },
+    { id: 'viz', ph: 'out', col: 9, row: 1, kind: 'schritt', mode: 'both', t: 'Visualisierung', s: 'adressatengerecht',
+      was: 'Die Ergebnisse aus der Liste werden so aufbereitet, dass sie zu den Interessen der jeweiligen Adressaten passen. Der Schritt läuft teils automatisch und wird teils von Hand ausgeführt.' },
   ];
   var EDGES = [
     { from: 'kbob', to: 'matdb' },
-    { from: 'matdb', to: 'xmat' },
-    { from: 'xmat', to: 'vmat' },
-    { from: 'vmat', to: 'revit' },
+    { from: 'epd', to: 'matdb' },
+    { from: 'matdb', to: 'vmat' },
     { from: 'ebkph', to: 'vbt' },
+    { from: 'vmat', to: 'revit' },
     { from: 'vbt', to: 'revit' },
     { from: 'revit', to: 'ifcx' },
     { from: 'ifcx', to: 'ifc' },
@@ -335,15 +306,13 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
     { from: 'qto', to: 'bew' },
     { from: 'qto', to: 'holz' },
     { from: 'mat', to: 'bil' },
-    { from: 'bt', to: 'excel' },
-    { from: 'bew', to: 'excel' },
-    { from: 'holz', to: 'excel' },
-    { from: 'bil', to: 'excel' },
-    { from: 'excel', to: 'db' },
-    { from: 'db', to: 'fis' },
-    { from: 'db', to: 'viz' },
-    { from: 'stkh', to: 'interv' },
-    { from: 'interv', to: 'stake' },
+    { from: 'bt', to: 'lausg' },
+    { from: 'bew', to: 'lausg' },
+    { from: 'holz', to: 'lausg' },
+    { from: 'bil', to: 'lausg' },
+    { from: 'lausg', to: 'liste' },
+    { from: 'liste', to: 'fis' },
+    { from: 'liste', to: 'viz' },
     { from: 'stake', to: 'viz', label: 'Adressaten' }
   ];
 
@@ -592,7 +561,6 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
     }
 
     panel.appendChild(section('Was passiert hier', mk('p', '', n.was)));
-    panel.appendChild(section('Aus der Skizze', mk('p', '', n.skizze)));
     if (n.klaeren) {
       var w = section('Zu klären', mk('p', '', n.klaeren), 'warnbox');
       panel.appendChild(w);
@@ -632,8 +600,8 @@ svg.edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow:
     function row(sw, txt) { lg.appendChild(sw); lg.appendChild(mk('span', '', txt)); }
     row(mk('span', 'sw proc'), 'Schritt oder Tätigkeit');
     row(mk('span', 'sw'), 'Daten, Datei oder System');
-    row(modeEl('man'), 'Manuell: wird von Hand ausgeführt');
-    row(modeEl('auto'), 'Automatisch: läuft selbst, die Pfeile davor fliessen');
+    row(modeEl('man'), 'Manuell');
+    row(modeEl('auto'), 'Automatisch');
     if (HAS_OPEN) {
       var b2 = mk('span', 'sw b'); b2.appendChild(mk('span', 'badge q', '?'));
       row(b2, 'Beschriftung zu klären');
